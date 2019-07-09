@@ -37,20 +37,20 @@
 #
 #
 
-import gtk
+from gi.repository import Gtk
 
 from deluge.log import LOG as log
 from deluge.ui.client import client
-from deluge.plugins.pluginbase import GtkPluginBase
+from deluge.plugins.pluginbase import Gtk3PluginBase
 import deluge.component as component
 import deluge.common
 
 from .common import get_resource
 
-class GtkUI(GtkPluginBase):
+class Gtk3UI(Gtk3PluginBase):
     def enable(self):
-        self.glade = gtk.glade.XML(get_resource("copycompleted_prefs.glade"))
-        component.get("Preferences").add_page("Copy Completed", self.glade.get_widget("copycompleted_prefs_box"))
+        self.builder = Gtk.Builder.new_from_file(get_resource("copycompleted_prefs.ui"))
+        component.get("Preferences").add_page("Copy Completed", self.builder.get_object("copycompleted_prefs_box"))
         component.get("PluginManager").register_hook("on_apply_prefs", self.on_apply_prefs)
         component.get("PluginManager").register_hook("on_show_prefs", self.on_show_prefs)
         self.on_show_prefs()
@@ -59,51 +59,51 @@ class GtkUI(GtkPluginBase):
         component.get("Preferences").remove_page("Copy Completed")
         component.get("PluginManager").deregister_hook("on_apply_prefs", self.on_apply_prefs)
         component.get("PluginManager").deregister_hook("on_show_prefs", self.on_show_prefs)
-        del self.glade
+        del self.builder
 
     def on_apply_prefs(self):
         log.debug("Applying prefs for Copy Completed")
         if client.is_localhost():
-            path = self.glade.get_widget("folderchooser_path").get_current_folder()
+            path = self.builder.get_object("folderchooser_path").get_current_folder()
         else:
-            path = self.glade.get_widget("entry_path").get_text()
+            path = self.builder.get_object("entry_path").get_text()
 
         umask = ''.join(map(str, [
             0,
-            self.glade.get_widget("spinbutton_umask1").get_value_as_int(),
-            self.glade.get_widget("spinbutton_umask2").get_value_as_int(),
-            self.glade.get_widget("spinbutton_umask3").get_value_as_int()
+            self.builder.get_object("spinbutton_umask1").get_value_as_int(),
+            self.builder.get_object("spinbutton_umask2").get_value_as_int(),
+            self.builder.get_object("spinbutton_umask3").get_value_as_int()
             ]))
 
         config = {
             "copy_to": path,
             "umask": umask,
-            "move_to": self.glade.get_widget("radiobutton_move_to").get_active(),
-            "append_label_todir": self.glade.get_widget("append_label_todir").get_active()
+            "move_to": self.builder.get_object("radiobutton_move_to").get_active(),
+            "append_label_todir": self.builder.get_object("append_label_todir").get_active()
         }
 
         client.copycompleted.set_config(config)
 
     def on_show_prefs(self):
         if client.is_localhost():
-            self.glade.get_widget("folderchooser_path").show()
-            self.glade.get_widget("entry_path").hide()
+            self.builder.get_object("folderchooser_path").show()
+            self.builder.get_object("entry_path").hide()
         else:
-            self.glade.get_widget("folderchooser_path").hide()
-            self.glade.get_widget("entry_path").show()
+            self.builder.get_object("folderchooser_path").hide()
+            self.builder.get_object("entry_path").show()
 
         def on_get_config(config):
             if client.is_localhost():
-                self.glade.get_widget("folderchooser_path").set_current_folder(config["copy_to"])
+                self.builder.get_object("folderchooser_path").set_current_folder(config["copy_to"])
             else:
-                self.glade.get_widget("entry_path").set_text(config["copy_to"])
+                self.builder.get_object("entry_path").set_text(config["copy_to"])
 
 
             umask = list(map(int, str(config["umask"])))
-            self.glade.get_widget("spinbutton_umask1").set_value(umask[1])
-            self.glade.get_widget("spinbutton_umask2").set_value(umask[2])
-            self.glade.get_widget("spinbutton_umask3").set_value(umask[3])
-            self.glade.get_widget("radiobutton_move_to").set_active(config["move_to"])
-            self.glade.get_widget("append_label_todir").set_active(config["append_label_todir"])
+            self.builder.get_object("spinbutton_umask1").set_value(umask[1])
+            self.builder.get_object("spinbutton_umask2").set_value(umask[2])
+            self.builder.get_object("spinbutton_umask3").set_value(umask[3])
+            self.builder.get_object("radiobutton_move_to").set_active(config["move_to"])
+            self.builder.get_object("append_label_todir").set_active(config["append_label_todir"])
 
         client.copycompleted.get_config().addCallback(on_get_config)

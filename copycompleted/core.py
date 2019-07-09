@@ -39,7 +39,7 @@
 
 import os
 import shutil
-import thread
+import _thread
 
 from deluge.log import LOG as log
 from deluge.plugins.pluginbase import CorePluginBase
@@ -126,7 +126,7 @@ class Core(CorePluginBase):
             return
 
         log.info("COPYCOMPLETED: Copying %s from %s to %s", info["name"], old_path, new_path)
-        thread.start_new_thread(Core._thread_copy, (torrent_id, old_path, new_path, files, umask))	
+        _thread.start_new_thread(Core._thread_copy, (torrent_id, old_path, new_path, files, umask))	
 
     def on_torrent_copied(self, torrent_id, old_path, new_path, path_pairs):
         """
@@ -148,7 +148,7 @@ class Core(CorePluginBase):
                     else:
                         log.error("COPYCOMPLETED: %s missing new location files. Skipping.", new_fp)
                         break
-                except Exception, e:
+                except Exception as e:
                     log.error("COPYCOMPLETED: Could not remove file.\n%s", e)
                     break
             else:
@@ -159,7 +159,7 @@ class Core(CorePluginBase):
                     for old_fp_dir in old_fp_dirs:
                         if os.path.isdir(old_fp_dir):
                                 os.removedirs(old_fp_dir)
-                except OSError, e:
+                except OSError as e:
                     log.error("COPYCOMPLETED: Error with removing dirs: %s", e)
                 else:
                     if not torrent.move_storage(new_path):
@@ -222,11 +222,11 @@ class Core(CorePluginBase):
                 # amend file mode with umask if specified
                 if umask:
                     # choose 0666 so execute bit is not set for files
-                    os.chmod(new_file_path, (~new_umask & 0666))
+                    os.chmod(new_file_path, (~new_umask & 0o666))
 
                 path_pairs.append(( old_file_path, new_file_path ))
 
-            except Exception, e:
+            except Exception as e:
                 os.error("COPYCOMPLETED: Could not copy file.\n%s", e)
 
         # revert new umask
@@ -239,7 +239,7 @@ class Core(CorePluginBase):
     @export()
     def set_config(self, config):
         "sets the config dictionary"
-        for key in config.keys():
+        for key in list(config.keys()):
             self.config[key] = config[key]
         self.config.save()
 
